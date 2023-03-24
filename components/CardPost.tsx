@@ -1,4 +1,3 @@
-import { useState, useRef } from "react";
 import {
   CardHeader,
   CardBody,
@@ -9,33 +8,53 @@ import {
   Heading,
   Flex,
   IconButton,
-  useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  FormControl,
-  Input,
-  FormLabel,
+  useToast,
 } from "@chakra-ui/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { DeleteIcon, EditIcon, ArrowForwardIcon } from "@chakra-ui/icons";
+import { postsType } from "@/types/postsType";
+import Link from "next/link";
+import ModalComp from "./ModalComp";
+import { deletePost } from "@/config/api";
 
-const CardPost = () => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const initialRef = useRef(null);
-  const finalRef = useRef(null);
-
+const CardPost = ({ title, body, id, userId }: postsType) => {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const { mutate } = useMutation(deletePost, {
+    onSuccess: () => {
+      queryClient.invalidateQueries(["posts"]);
+      toast({
+        title: "Post deleted",
+        status: "success",
+        description:
+          "resource will not be really updated on the server but it will be faked as if.",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom-left",
+      });
+    },
+    onError: () => {
+      queryClient.invalidateQueries(["posts"]);
+      toast({
+        title: "Something went wrong",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom-left",
+      });
+    },
+  });
+  const onDelete = (id: any) => {
+    mutate(id);
+  };
   return (
     <>
       <Card>
         <CardHeader>
-          <Heading size="sm"> Customer dashboard</Heading>
+          <Heading size="sm">{title}</Heading>
         </CardHeader>
         <CardBody py={0}>
-          <Text>View a summary of all your customers over the last month.</Text>
+          <Text noOfLines={2}>{body}</Text>
         </CardBody>
         <CardFooter py={3}>
           <Flex alignItems="center" mb={2}>
@@ -45,54 +64,29 @@ const CardPost = () => {
               colorScheme="blue"
               size="sm"
             >
-              Read More
+              <Link href={`/detail/${id}`}>Read More</Link>
             </Button>
-            <IconButton
-              icon={<EditIcon />}
-              aria-label="Edit"
-              variant="ghost"
-              color="green.600"
-              onClick={onOpen}
-            />
+            <ModalComp isCreate={false} title={title} body={body} id={id}>
+              {(onOpen) => (
+                <IconButton
+                  icon={<EditIcon />}
+                  aria-label="Edit"
+                  variant="ghost"
+                  color="green.600"
+                  onClick={onOpen}
+                />
+              )}
+            </ModalComp>
             <IconButton
               icon={<DeleteIcon />}
               aria-label="Delete"
               variant="ghost"
               color="red.600"
+              onClick={() => onDelete(id)}
             />
           </Flex>
         </CardFooter>
       </Card>
-      <Modal
-        initialFocusRef={initialRef}
-        finalFocusRef={finalRef}
-        isOpen={isOpen}
-        onClose={onClose}
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Create your account</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <FormControl>
-              <FormLabel>First name</FormLabel>
-              <Input ref={initialRef} placeholder="First name" />
-            </FormControl>
-
-            <FormControl mt={4}>
-              <FormLabel>Last name</FormLabel>
-              <Input placeholder="Last name" />
-            </FormControl>
-          </ModalBody>
-
-          <ModalFooter>
-            <Button colorScheme="blue" mr={3}>
-              Save
-            </Button>
-            <Button onClick={onClose}>Cancel</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </>
   );
 };

@@ -2,11 +2,30 @@ import Head from "next/head";
 import { Inter } from "next/font/google";
 import Header from "@/components/Header";
 import CardPost from "@/components/CardPost";
-import { SimpleGrid, Container } from "@chakra-ui/react";
+import { SimpleGrid, Container, Button, Center } from "@chakra-ui/react";
+import { useQuery } from "@tanstack/react-query";
+import { getAllPosts } from "@/config/api";
+import { postsType } from "@/types/postsType";
+import { AddIcon } from "@chakra-ui/icons";
+import ModalComp from "@/components/ModalComp";
 
 const inter = Inter({ subsets: ["latin"] });
 
+type queryType = {
+  isLoading: boolean;
+  isError: boolean;
+};
+
+type queryPostType = queryType & postsType;
 export default function Home() {
+  const { data, isLoading, isError }: any = useQuery(["getPosts"], getAllPosts);
+
+  if (isLoading) {
+    return <h1>Loading</h1>;
+  }
+  if (isError) {
+    return <h1>Error</h1>;
+  }
   return (
     <>
       <Head>
@@ -18,11 +37,31 @@ export default function Home() {
       <main>
         <Header />
         <Container mt={10} maxW="7xl">
+          <Center mb={10}>
+            <ModalComp isCreate={true}>
+              {(onOpen) => (
+                <Button
+                  onClick={onOpen}
+                  colorScheme="green"
+                  leftIcon={<AddIcon />}
+                >
+                  Create New Posts
+                </Button>
+              )}
+            </ModalComp>
+          </Center>
           <SimpleGrid
             spacing={4}
             templateColumns="repeat(auto-fill, minmax(200px, 1fr))"
           >
-            <CardPost />
+            {data?.data?.map((data: postsType) => (
+              <CardPost
+                key={data.id}
+                title={data.title}
+                body={data.body}
+                id={data.id}
+              />
+            ))}
           </SimpleGrid>
         </Container>
       </main>
